@@ -1,11 +1,19 @@
-// import type { User } from "../types/types.ts";
+import mongoose from "mongoose";
+import { config } from "../config.ts";
 
-// export const users: User[] = [
-//     {
-//         id: "1", name: "bob", email: "bob@gmail.com"
-//     }, {
-//         id: "2", name: "mom", email: "mom@gmail.com"
-//     }, {
-//         id: "3", name: "non", email: "non@gmail.com"
-//     },
-// ]
+
+
+
+
+export async function mongoConntct() {
+    try {
+        await mongoose.connect(config.mongo_uri || "mongodb://127.0.0.1:27017/myapp");
+        console.log("mongo conncet");
+    } catch (error: any) {
+        throw new Error(error)
+    }
+
+}
+
+
+mongoConntct();

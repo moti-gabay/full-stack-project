@@ -1,10 +1,8 @@
 import { Router, type Request, type Response } from "express";
-import { v4 as uuid } from 'uuid';
 import type { User } from "../types/types.ts";
-import { readJson, signToken, verifyToken, writeToJson } from "../utils/utils.ts";
-import cookieParser from "cookie-parser";
-import "dotenv/config.js"
-
+import { UserModel } from "../model/user.ts";
+import { signToken, verifyToken } from "../utils/utils.ts";
+import { hash, compare } from "bcrypt"
 
 
 export const authRouter = Router();
@@ -12,42 +10,29 @@ export const authRouter = Router();
 
 authRouter.post("/register", async (req: Request, res: Response) => {
     try {
-
-        const { name, email } = req.body;
+        const { name, email, password } = req.body;
         if (!name || !email) {
             return res.send("name and email is required")
         }
-        const users = await readJson();
-        const user = users.find((u: User) => u.email === email)
-        if (user) {
-            return res.json({ "msg": "this email is alredy in system" })
-        }
-
-        const newUser: User = {
-            id: uuid(),
-            name,
-            email
-        }
-        users.push(newUser);
-
-        await writeToJson(users)
-
-        return res.json(newUser)
+        const hashPassword = await hash(password, 10);
+        const user = await UserModel.create({ name, email,password:hashPassword, role: "user" });
+        return res.status(201).json({ id: user._id, email: user.email })
     } catch (err: any) {
         throw new Error(err)
     }
 });
 
 
-authRouter.post("/login", (req: Request, res: Response) => {
+authRouter.post("/login", async (req: Request, res: Response) => {
     const { name, email } = req.body;
     if (!name || !email) {
         return res.send("name and email is required")
     }
-    const user = users.find((u) => u.email === email);
-    if (!user) {
+    const user = await UserModel.findOne({ email }) || {};
+    if (!user.name) {
         return res.status(404).json({ "msg": "user is not found !" })
     }
+
     const token = signToken(user);
     res.cookie('token', token, {
         httpOnly: true,
@@ -78,16 +63,4 @@ authRouter.post("/logout", (req, res) => {
     res.clearCookie('token');
     return res.sendStatus(204);
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
